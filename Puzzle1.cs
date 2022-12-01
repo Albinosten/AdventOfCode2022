@@ -11,25 +11,55 @@ namespace AdventOfCode2022
         {
             this.allLines = File.ReadAllLines(path);
         }
-        public static string path => "input/example.txt";
-        public int FirstResult => 2;
+        public static string path => "input/Puzzle1.txt";
+        public int FirstResult => 70116;
 
-        public long SecondResult => 3;
+        public long SecondResult => 206582;
 
         public int Solve()
         {
+            var max = 0;
+            var current =0;
             foreach(var line in allLines)
             {
-
+                if(!string.IsNullOrEmpty(line))
+                {
+                    current += int.Parse(line);
+                }
+                else 
+                {
+                    if(current> max)
+                    {
+                        max = current;
+                    }
+                    current = 0;
+                }
             }
-            return this.allLines.Count();
+            return max;
 
         }
 
         public long SolveNext()
         {
-            
-return 3;
+            var result = new List<int>();
+            var current = 0;
+            foreach(var line in allLines)
+            {
+                if(!string.IsNullOrEmpty(line))
+                {
+                    current += int.Parse(line);
+                }
+                else 
+                {
+                    result.Add(current);
+                    current = 0;
+                }
+                
+            }
+            return result
+                .OrderByDescending(x => x)
+                .Take(3)
+                .Sum();
         }
     }
 }
