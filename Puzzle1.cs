@@ -54,8 +54,8 @@ namespace AdventOfCode2022
                     result.Add(current);
                     current = 0;
                 }
-                
             }
+                
             return result
                 .OrderByDescending(x => x)
                 .Take(3)
