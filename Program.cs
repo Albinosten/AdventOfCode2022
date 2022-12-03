@@ -8,7 +8,7 @@ namespace AdventOfCode2022
         {
             OutputResult(new Puzzle1());
             OutputResult(new Puzzle2());
-            // OutputResult(new Puzzle3());
+            OutputResult(new Puzzle3());
         }
 
         private static void OutputResult(IPuzzle puzzle)
