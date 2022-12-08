@@ -63,8 +63,6 @@ namespace AdventOfCode2022
             var spaceLeft = 70000000 - root.GetSize();
             var spaceToClear = 30000000 - spaceLeft;
 
-            //24933642 too high;
-            //12785886
             return root
                 .GetSubDirectorysRecursive(new List<Directory>())
                 .OrderBy( x=> x.GetSize())

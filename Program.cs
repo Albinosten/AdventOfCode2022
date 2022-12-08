@@ -13,6 +13,10 @@ namespace AdventOfCode2022
             OutputResult(new Puzzle5());
             OutputResult(new Puzzle6());
             OutputResult(new Puzzle7());
+            OutputResult(new Puzzle8());
+
+
+            OutputResult(new Example());
         }
 
         private static void OutputResult(IPuzzle puzzle)
