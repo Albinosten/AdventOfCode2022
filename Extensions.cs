@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace AdventOfCode2022
 {
-    public static class ExtentionsPuzzle8
+    public static class ExtensionsPuzzle8
     {
         public static IEnumerable<T> TakeWhileInclusive<T>(this IEnumerable<T> source, Func<T, bool> predicate)
         {

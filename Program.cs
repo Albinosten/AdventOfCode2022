@@ -14,9 +14,11 @@ namespace AdventOfCode2022
             OutputResult(new Puzzle6());
             OutputResult(new Puzzle7());
             OutputResult(new Puzzle8());
+            OutputResult(new Puzzle9());
+            OutputResult(new Puzzle10());
 
 
-            OutputResult(new Example());
+            // OutputResult(new Example());
         }
 
         private static void OutputResult(IPuzzle puzzle)
@@ -32,6 +34,12 @@ namespace AdventOfCode2022
             Console.WriteLine("Second: " + puzzle.SolveNext() + " Should be: " + puzzle.SecondResult);
         }
         private static void OutputResult(IPuzzle<long> puzzle)
+        {
+            Console.WriteLine("Now solving: " + puzzle.GetType().Name);
+            Console.WriteLine("First: " + puzzle.Solve() + " Should be: " + puzzle.FirstResult);
+            Console.WriteLine("Second: " + puzzle.SolveNext() + " Should be: " + puzzle.SecondResult);
+        }
+        private static void OutputResult(IPuzzle<int, string> puzzle)
         {
             Console.WriteLine("Now solving: " + puzzle.GetType().Name);
             Console.WriteLine("First: " + puzzle.Solve() + " Should be: " + puzzle.FirstResult);
