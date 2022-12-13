@@ -36,7 +36,7 @@ namespace AdventOfCode2022
         public long SolveNext()
         {
             var points = 0;
-            foreach(var badgeGroup in SplitList<string>(allLines, 3))
+            foreach(var badgeGroup in allLines.SplitList(3))
             {
                 var badge = badgeGroup[0]
                     .Where(x => badgeGroup[1].Contains(x))
@@ -51,12 +51,6 @@ namespace AdventOfCode2022
             var offset = a < 97 ? 38 : 96;
             return  a - offset;
         }
-        public static IEnumerable<IList<T>> SplitList<T>(IList<T> lines, int nSize)  
-        {        
-            for (int i = 0; i < lines.Count; i += nSize) 
-            { 
-                yield return lines.ToList().GetRange(i, Math.Min(nSize, lines.Count - i)); 
-            }  
-        }
+        
     }
 }

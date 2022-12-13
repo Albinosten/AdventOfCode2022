@@ -1,13 +1,8 @@
 namespace AdventOfCode2022
 {
 
-    public interface IPuzzle<T>
+    public interface IPuzzle<T> : IPuzzle<T,T>
     {
-        T Solve();
-        T SolveNext();
-
-        T FirstResult {get;}
-        T SecondResult {get;}    
     }
     public interface IPuzzle<T, P>
     {
@@ -17,12 +12,7 @@ namespace AdventOfCode2022
         T FirstResult {get;}
         P SecondResult {get;}    
     }
-    public interface IPuzzle
+    public interface IPuzzle : IPuzzle<int,long>
     {
-        int Solve();
-        long SolveNext();
-
-        int FirstResult {get;}
-        long SecondResult {get;}
     }
 }
