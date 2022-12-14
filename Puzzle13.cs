@@ -33,85 +33,127 @@ namespace AdventOfCode2022
                 var packetOne = this.ParseInput(lines[0], new List());
                 var packetTwo = this.ParseInput(lines[1], new List());
 
-                var a = true;
+                var keepOnGoing = true;
                 IData left = packetOne;
                 IData right = packetTwo;
                 int totalCount = 0;
-                while(a)
+                while(keepOnGoing)
                 {
                     totalCount++;
                     var compareStrategy = this.GetCompareStrategy((left.GetType(), right.GetType()));
-                    if(compareStrategy(left, right))
+                    var compareResult = compareStrategy(left, right);
+                    if(compareResult.Item1)
                     {
                         //left is smaller. correct order
-                        a = false;
-                        result.Add( totalPacketsInRightPosition);
+                        keepOnGoing = false;
+                        result.Add(totalPacketsInRightPosition);
                     }
 
                     //have to get again because mixedStategy is type order dependent
-                    else if(this.GetCompareStrategy((right.GetType(), left.GetType()))(right, left))
+                    //this.GetCompareStrategy((right.GetType(), left.GetType()))(right, left)
+                    else if(compareResult.Item2)
                     {
                         //right is smaller. wrong order
-                        a = false;
+                        keepOnGoing = false;
                     }
                     else
                     {
-                        //keep going
-
-                        //kan vara så att vi  går för mycket på djupen här.. 
-                        //om vi kommer hit med Item som typ så smäller datas.
-                        var anyLeft = left.TryDequeue(out left);
-                        var anyRight = right.TryDequeue(out right);
-                        if(anyLeft != anyRight)
+                        IData nextLeft;
+                        IData nextRight;
+                        var any = this.TryDequeue(left, out nextLeft, right, out nextRight);
+                        
+                        if(any.Item1 != any.Item2)
                         {
-                            a = false;
-                            if(anyRight)
+                            keepOnGoing = false;
+                            if(any.Item2)
                             {
-                                result.Add( totalPacketsInRightPosition);
+                                result.Add(totalPacketsInRightPosition);
                             }
                         }
-                        if(anyLeft == false && anyRight == false)
+                        if(any.Item1 == false && any.Item2 == false)
                         {
+                            // a = false;
+                            Console.WriteLine(lines[0]);
+                            Console.WriteLine(lines[1]);
                             throw new NotImplementedException("hamnar jag här har jag gjort fel");
                             //borde inte komma hit eftersom att då är båda slut..
-
+                        }
+                        else 
+                        {
+                            left = nextLeft;
+                            right = nextRight;
                         }
                     }
                 }
             }
-
-
             foreach (var item in result)
             {
                 Console.WriteLine(item);
             }
-                Console.WriteLine("total rows:"+result.Count());
+            Console.WriteLine("total rows:"+result.Count());
 
             //5403 too high
+            //4795 too low
             return result.Sum();
         }
-        bool CompareNumber(Item left, Item right)
+        (bool, bool) TryDequeue(IData left, out IData nextLeft, IData right, out IData nextRight)
+        {
+            var anyLeft = left.TryDequeue(out nextLeft);
+            var anyRight = right.TryDequeue(out nextRight);
+
+            if(anyLeft == false && anyRight == false)
+            {
+                if(left.Parent != null && right.Parent != null)
+                {
+                    return this.TryDequeue(left.Parent, out nextLeft, right.Parent, out nextRight);
+                }
+                else 
+                {
+                    anyLeft = left.Parent?.TryDequeue(out nextLeft) ?? false;
+                    anyRight = right.Parent?.TryDequeue(out nextRight) ?? false;
+                }
+            }
+
+            return (anyLeft, anyRight);
+        }
+        bool TryDequeueParentReqursive(IData data, out IData next)
+        {
+            if(data.Parent != null)
+            {
+                return data.Parent.TryDequeue(out next) ? true : this.TryDequeueParentReqursive(data.Parent, out next);
+            }
+            next = null;
+            return false;
+        }
+        (bool,bool) CompareNumber(Item left, Item right)
         {
             //left is smaller and in correct order
-            return left.Number < right.Number;
+            return (left.Number < right.Number, right.Number < left.Number);
         }
-        bool CompareList(List left, List right)
+        (bool, bool) CompareList(List left, List right)
         {
-            return false;
+            return (false, false);
         }
-        bool CompareMixed(List list, Item item)
+        (bool,bool) CompareMixed(List list, Item item)
         {
-            //convert item to list and compare.
-            // var childList = list.AddList();
-            // childList.AddNumber(item.Number);
+            this.InsertFirstInQueue(list, item.Number);
 
-            list.AddNumber(item.Number);
-            return false;
+            return (false, false);
         }
-
-        Func<IData,IData,bool> GetCompareStrategy((Type a, Type b) bb)
+        void InsertFirstInQueue(List list, int number)
         {
-            var stratigies = new Dictionary<(Type, Type), Func<IData,IData,bool>>()
+            var newQueue = new Queue<IData>();
+            newQueue.Enqueue(list.CreateNumber(number));
+            
+            while(list.datas.TryDequeue(out var item))
+            {
+                newQueue.Enqueue(item);
+            }
+            list.datas = newQueue;
+        }
+        Func<IData,IData,(bool, bool)> GetCompareStrategy((Type a, Type b) bb)
+        {
+            var stratigies = new Dictionary<(Type, Type), Func<IData,IData,(bool,bool)>>()
             {
                 {(typeof(List), typeof(List)), (left,right) => this.CompareList((List)left, (List)right)},
                 {(typeof(Item), typeof(Item)), (left, right) => this.CompareNumber((Item)left, (Item)right)},
@@ -148,7 +190,7 @@ namespace AdventOfCode2022
                 {
                     last = last.Parent;
                 }
-                else if(float.TryParse(newInput, out float number))
+                else if(int.TryParse(newInput, out int number))
                 {
                     last.AddNumber((int)number);
                     i += newInput.Length-1;
@@ -183,7 +225,7 @@ namespace AdventOfCode2022
             public Type Type => typeof(List);
             public int Number => throw new NotImplementedException();
             public int NumberOfDatas => this.datas.Count();
-            public Queue<IData> datas { get; }
+            public Queue<IData> datas { get; set;}
             public List Parent {get; private set;}
             public List()
             {
@@ -197,17 +239,21 @@ namespace AdventOfCode2022
                 return data;
             }
 
-            public void AddNumber(int a)
+            public Item CreateNumber(int a)
             {
                 var item = new Item(a);
                 item.Parent = this;
-                this.datas.Enqueue(item);
+                return item;
             }
+            public void AddNumber(int a)
+            {
+                this.datas.Enqueue(this.CreateNumber(a));
+            }
+
             public bool TryDequeue(out IData data)
             {
                 return this.datas.TryDequeue(out data) 
-                    || (this.Parent?.TryDequeue(out data) 
-                        ?? false);
+                    ;
             }
         }
 

@@ -12,7 +12,7 @@ namespace AdventOfCode2022
         {
             this.allLines = File.ReadAllLines(path);
         }
-        public static string path => "input/Puzzle8.TXT";
+        public static string path => "input/Puzzle8.txt";
         public int FirstResult => 1787;
         public long SecondResult => 440640;
 
