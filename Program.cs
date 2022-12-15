@@ -1,7 +1,5 @@
 ﻿using System;
-
 using System.Diagnostics;
-using System.Threading;
 
 namespace AdventOfCode2022
 {
@@ -17,6 +15,7 @@ namespace AdventOfCode2022
             var watch = new Stopwatch();
             watch.Start();
 
+            OutputResult(new Example());
             OutputResult(new Puzzle1());
             OutputResult(new Puzzle2());
             OutputResult(new Puzzle3());
@@ -34,7 +33,6 @@ namespace AdventOfCode2022
             watch.Stop();
             Console.WriteLine("Total time run: "+ watch.Elapsed);
 
-            // OutputResult(new Example());
         }
         private static void OutputResult<T,J>(IPuzzle<T,J> puzzle)
         {
