@@ -16,20 +16,21 @@ namespace AdventOfCode2022
             watch.Start();
 
             OutputResult(new Example());
-            OutputResult(new Puzzle1());
-            OutputResult(new Puzzle2());
-            OutputResult(new Puzzle3());
-            OutputResult(new Puzzle4());
-            OutputResult(new Puzzle5());
-            OutputResult(new Puzzle6());
-            OutputResult(new Puzzle7());
-            OutputResult(new Puzzle8());
-            OutputResult(new Puzzle9());
-            OutputResult(new Puzzle10());
-            OutputResult(new Puzzle11());
-            OutputResult(new Puzzle12());
-            OutputResult(new Puzzle13());
-            OutputResult(new Puzzle14());
+            // OutputResult(new Puzzle1());
+            // OutputResult(new Puzzle2());
+            // OutputResult(new Puzzle3());
+            // OutputResult(new Puzzle4());
+            // OutputResult(new Puzzle5());
+            // OutputResult(new Puzzle6());
+            // OutputResult(new Puzzle7());
+            // OutputResult(new Puzzle8());
+            // OutputResult(new Puzzle9());
+            // OutputResult(new Puzzle10());
+            // OutputResult(new Puzzle11());
+            // OutputResult(new Puzzle12());
+            // OutputResult(new Puzzle13());
+            // OutputResult(new Puzzle14());
+            OutputResult(new Puzzle15());
 
             watch.Stop();
             Console.WriteLine("Total time run: "+ watch.Elapsed);
