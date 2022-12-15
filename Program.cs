@@ -29,6 +29,7 @@ namespace AdventOfCode2022
             OutputResult(new Puzzle11());
             OutputResult(new Puzzle12());
             OutputResult(new Puzzle13());
+            OutputResult(new Puzzle14());
 
             watch.Stop();
             Console.WriteLine("Total time run: "+ watch.Elapsed);
@@ -36,9 +37,15 @@ namespace AdventOfCode2022
         }
         private static void OutputResult<T,J>(IPuzzle<T,J> puzzle)
         {
+            var watch = new Stopwatch();
+            watch.Start();
+
             Console.WriteLine("Now solving: " + puzzle.GetType().Name);
             Console.WriteLine("First: " + puzzle.Solve() + " Should be: " + puzzle.FirstResult);
             Console.WriteLine("Second: " + puzzle.SolveNext() + " Should be: " + puzzle.SecondResult);
+            
+            watch.Stop();
+            Console.WriteLine("Time for puzzle: "+ watch.Elapsed);
         }
     }
 }
