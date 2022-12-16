@@ -15,18 +15,15 @@ namespace AdventOfCode2022
         // public static string path => "input/EXAMPLE.TXT";
         public static string path => "input/Puzzle15.txt";
         public int FirstResult => 5335787;
-        public long SecondResult => 0;
+        public long SecondResult => 13673971349056;
 
         public int Solve()
         {
             return this.Solve(2000000);
-            // return this.Solve(10);
         }
         public long SolveNext()
         {
-
             var map = new Dictionary<(int,int), int>();
-            var becons = new HashSet<(int,int)>();
             foreach(var line in this.allLines)
             {
                 var parsed = line.Replace('=',',').Replace(':',',').Split(',');
@@ -34,21 +31,18 @@ namespace AdventOfCode2022
                 var becon = (GetNumber(parsed,5));
                 var distance = this.GetDistanceBetweenPositions(sensor,becon);
                 map[sensor] = distance;
-                becons.Add(becon);
             }
-
 
             var maxNumber = 4000000;
             for( int y = 0; y<= maxNumber; y++)
             {
-                var result = this.SolveNext(maxNumber,y, map);
+                var result = this.SolveNext(maxNumber, 0, y, map);
                 if(result.Item1)
                 {
-                    return (result.Item2 * 4000000) + y;
+                    return (result.Item2 * 4000000L) + y;
                 }
             }
             return 0;
-            // return this.Solve(0);
         }
 
         int Solve(int y)
@@ -74,10 +68,10 @@ namespace AdventOfCode2022
             {
                 var testBecon = (x, y);
                 var canNotPlacebecon = false;
-                foreach(var sensors in map)
+                foreach(var sensor in map)
                 {
-                    var distance = this.GetDistanceBetweenPositions(testBecon, sensors.Key);
-                    if(!becons.Contains(testBecon) &&  distance <= sensors.Value)
+                    var distance = this.GetDistanceBetweenPositions(testBecon, sensor.Key);
+                    if(!becons.Contains(testBecon) &&  distance <= sensor.Value)
                     {
                         canNotPlacebecon = true;
                         //can not place here;
@@ -90,20 +84,20 @@ namespace AdventOfCode2022
             }
             return result;
         }
-        (bool, int) SolveNext(int xMax, int y, Dictionary<(int,int), int> map)
+        (bool, int) SolveNext(int xMax,int xMin, int y, Dictionary<(int,int), int> map)
         {
-
-
-            for(int x = 0; x <= xMax; x++)
+            for(int x = xMin; x <= xMax; x++)
             {
                 var testBecon = (x, y);
                 var canBePlaced = true;
-                foreach(var sensors in map)
+                foreach(var sensor in map)
                 {
-                    var distance = this.GetDistanceBetweenPositions(testBecon, sensors.Key);
-                    if(/*!becons.Contains(testBecon) && */ distance <= sensors.Value)
+                    var distance = this.GetDistanceBetweenPositions(testBecon, sensor.Key);
+                    if(distance <= sensor.Value)
                     {
+                        x += sensor.Value - distance;
                         canBePlaced = false;
+                        break;
                         //can not place here;
                     }
                 }
