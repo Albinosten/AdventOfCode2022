@@ -19,19 +19,18 @@ namespace AdventOfCode2022
 
         public int Solve()
         {
-            return this.Solve(2000000);
+            var map = this.CreateMap();
+            var maxDistance = map.Values.Max()+1;
+            var xMin = map.Keys.Min(x => x.Item1)-maxDistance;
+            var xMax = map.Keys.Max(x => x.Item1)+maxDistance;
+
+            var result = this.SolveNext(xMax, xMin, 2000000, map);
+            return (xMax - xMin) - result.Item2.Count();
         }
+
         public long SolveNext()
         {
-            var map = new Dictionary<(int,int), int>();
-            foreach(var line in this.allLines)
-            {
-                var parsed = line.Replace('=',',').Replace(':',',').Split(',');
-                var sensor = (GetNumber(parsed,1));
-                var becon = (GetNumber(parsed,5));
-                var distance = this.GetDistanceBetweenPositions(sensor,becon);
-                map[sensor] = distance;
-            }
+            var map = this.CreateMap();
 
             var maxNumber = 4000000;
             for( int y = 0; y<= maxNumber; y++)
@@ -39,16 +38,14 @@ namespace AdventOfCode2022
                 var result = this.SolveNext(maxNumber, 0, y, map);
                 if(result.Item1)
                 {
-                    return (result.Item2 * 4000000L) + y;
+                    return (result.Item2[0] * 4000000L) + y;
                 }
             }
-            return 0;
+            throw new Exception("No match found");
         }
-
-        int Solve(int y)
+        Dictionary<(int,int), int> CreateMap()
         {
             var map = new Dictionary<(int,int), int>();
-            var becons = new HashSet<(int,int)>();
             foreach(var line in this.allLines)
             {
                 var parsed = line.Replace('=',',').Replace(':',',').Split(',');
@@ -56,43 +53,20 @@ namespace AdventOfCode2022
                 var becon = (GetNumber(parsed,5));
                 var distance = this.GetDistanceBetweenPositions(sensor,becon);
                 map[sensor] = distance;
-                becons.Add(becon);
             }
-
-            var maxDistance = map.Values.Max()+1;
-            var xMin = map.Keys.Min(x => x.Item1)-maxDistance;
-            var xMax = map.Keys.Max(x => x.Item1)+maxDistance;
-
-            var result = 0;
-            for(int x = xMin; x <= xMax; x++)
-            {
-                var testBecon = (x, y);
-                var canNotPlacebecon = false;
-                foreach(var sensor in map)
-                {
-                    var distance = this.GetDistanceBetweenPositions(testBecon, sensor.Key);
-                    if(!becons.Contains(testBecon) &&  distance <= sensor.Value)
-                    {
-                        canNotPlacebecon = true;
-                        //can not place here;
-                    }
-                }
-                if(canNotPlacebecon)
-                {
-                    result++;
-                }  
-            }
-            return result;
+            return map;
         }
-        (bool, int) SolveNext(int xMax,int xMin, int y, Dictionary<(int,int), int> map)
+        
+        (bool, List<int>) SolveNext(int xMax,int xMin, int y, Dictionary<(int,int), int> map)
         {
+            var result = new List<int>();
             for(int x = xMin; x <= xMax; x++)
             {
-                var testBecon = (x, y);
+                var beacon = (x,y);
                 var canBePlaced = true;
                 foreach(var sensor in map)
                 {
-                    var distance = this.GetDistanceBetweenPositions(testBecon, sensor.Key);
+                    var distance = this.GetDistanceBetweenPositions(beacon, sensor.Key);
                     if(distance <= sensor.Value)
                     {
                         x += sensor.Value - distance;
@@ -103,10 +77,10 @@ namespace AdventOfCode2022
                 }
                 if(canBePlaced)
                 {
-                    return (true, x);
+                    result.Add(x);
                 }  
             }
-            return (false, 0);
+            return (result.Count > 0, result);
         }
         (int, int) GetNumber(string[] s, int i)
         {
