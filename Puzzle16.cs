@@ -76,10 +76,6 @@ namespace AdventOfCode2022
                             highScore = a > highScore ? a : highScore;
                         }
                     }
-                    // else if (!elephant && previous.Score >= highScore / 2)
-                    // {
-                    //     Search(start, too, (26, previous.Score), true);
-                    // }
                 }
 
 
@@ -234,61 +230,7 @@ EE => DD => CC
             return a.OrderByDescending(x => x.score).First();
         }
 
-        int BFS(Dictionary<string,Vertex> map, Vertex root)
-        {
-            var q = new Queue<Vertex>();
-            root.Discovered = true;
-            q.Enqueue(root);
-            var i = 30;
-            var result = 0;
-            while(q.Any() && i > 0)
-            {
-                var v = q.Dequeue();
-                i--;
-                if(v.FlowRate>0)
-                {
-                    i--;
-                    result += i*v.FlowRate;
-                    Console.WriteLine(v.Name + " " + v.FlowRate);
-                }
-                // if(v == goal) return 0;
 
-                foreach(var n in v.Neighbours)
-                {
-                    var w = map[n];
-                    if(!w.Discovered)
-                    {
-                        w.Discovered = true;
-                        w.Parent = v;
-                        q.Enqueue(w);
-                    }
-                }
-            }
-
-            return result;
-        }
-        (Vertex, int) GetHighestValueVertex(Dictionary<string, Dictionary<string, int>> distanceMap
-            , Vertex start
-            , Dictionary<string,Vertex> map
-            , int minutesLeft
-            )
-        {
-            (Vertex, int) result = (start,0);
-            foreach(var v in distanceMap[start.Name])
-            {
-                if(v.Key == start.Name || map[v.Key].Discovered)
-                {
-                    continue;
-                }
-                var value = (minutesLeft - v.Value) * map[v.Key].FlowRate;
-                if(value > result.Item2 && minutesLeft - v.Value > 0)
-                {
-                    result = (map[v.Key], v.Value);
-                }
-            }
-
-            return result;
-        }
         public long SolveNext()
         { 
             return 0;
