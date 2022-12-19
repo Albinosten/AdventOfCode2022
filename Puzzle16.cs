@@ -72,6 +72,7 @@ namespace AdventOfCode2022
                         }
                         if (too.Count > 1)
                         {
+                            //check time here?
                             var a = Search(to, too.Where(j => j != to).ToList(), move);
                             highScore = a > highScore ? a : highScore;
                         }
