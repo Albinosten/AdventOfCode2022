@@ -16,8 +16,8 @@ namespace AdventOfCode2022
 
 		public bool Example => false;
 		public bool UseParallell = true;
-        public bool DebugOutput => true;
-		public static int s_Subcount => 7;
+        public bool DebugOutput => false;
+		public static int s_Subcount => 4;
 
         public int FirstResult => 0;
         public long SecondResult => 0;
@@ -44,12 +44,16 @@ namespace AdventOfCode2022
 			var clock = new Stopwatch();
             
 			clock.Start();
-			var baa = this.Solve(vertexWithFlow, distanceMap, map);
+    			Console.WriteLine("Answer "+this.Solve(vertexWithFlow, distanceMap, map)+ " took: " +clock.Elapsed+ " with parallell = " + UseParallell + " subcount: "+ s_Subcount);
 			clock.Stop();
-			Console.WriteLine("Answer "+baa+ " took: " +clock.Elapsed+ " with parallell = " + UseParallell + " subcount: "+ s_Subcount);
-			
             clock.Reset();
+			
             
+            clock.Start();
+			    Console.WriteLine("Answer "+Solver_BFS(vertexWithFlow,distanceMap,map)+ " took: " +clock.Elapsed+ " with solving DFS");
+            clock.Stop();
+            clock.Reset();
+
 			clock.Start();
 			this.UseParallell = !this.UseParallell;
 			var abb = this.Solve(vertexWithFlow, distanceMap, map);
@@ -58,6 +62,37 @@ namespace AdventOfCode2022
 
 			return 0;
 		}
+
+        public int Solver_BFS(List<string> vertexWithFlow, Dictionary<string, Dictionary<string, int>> distanceMap, Dictionary<string, Vertex> map)
+        {
+            var q = new Queue<(string currentvalve, int timeRemaining, int totalRelief, List<string> openValves)>();
+
+            // q.Enqueue((map.Keys.First(), 30, 0, new List<string>()));
+            q.Enqueue(("AA", 30, 0, new List<string>()));
+
+            int maxValue = 0;
+            while(q.Any())
+            {
+                var c = q.Dequeue();
+                
+                foreach(var edge in vertexWithFlow)
+                {
+                    var distance = distanceMap[c.currentvalve][edge] +1;
+                    if( distance < c.timeRemaining && !c.openValves.Contains(edge))
+                    {
+                        var presure = (c.timeRemaining - distance) * map[edge].FlowRate;
+                        var openedValves = c.openValves.ToList();
+                        openedValves.Add(edge);
+                        q.Enqueue((edge, c.timeRemaining-distance , c.totalRelief + presure, openedValves));
+                        if(c.totalRelief + presure > maxValue)
+                        {
+                            maxValue = c.totalRelief + presure;
+                        }
+                    }
+                }
+            }
+            return maxValue;
+        }
         public long SolveNext()
         {
             return 0;
@@ -65,7 +100,7 @@ namespace AdventOfCode2022
 		int Solve(List<string> vertexWithFlow, Dictionary<string, Dictionary<string, int>> distanceMap, Dictionary<string, Vertex> map) 
 		{
 			string next = "";
-			string current = map.Keys.First();
+			string current = "AA";
 			int result = 0;
 			var time = 30;
             var vertex = vertexWithFlow.ToList();
@@ -78,11 +113,13 @@ namespace AdventOfCode2022
 				next = this.UseParallell 
 					? this.GetNextWithParallellPermutations(current, vertex, distanceMap, map, time) 
 					: this.GetNextWithPermutations(current, vertex, distanceMap, map, time);
-				if(DebugOutput)Console.WriteLine(next + " at time:" + (30-time+2) + " with flow of: "+ map[next].FlowRate);
-				if(distanceMap[current][next] > 0) 
+				
+                var distance = distanceMap[current][next];
+                time -= distance;
+                time--;
+                if(time > 0)
 				{
-					time -= distanceMap[current][next];
-					time--;
+				    if(DebugOutput)Console.WriteLine(next + " at time:" + (30-time) + " with flow of: "+ map[next].FlowRate);
 					result += (time) * map[next].FlowRate;
 				}
 				
@@ -94,7 +131,7 @@ namespace AdventOfCode2022
 	
 		string GetNextWithParallellPermutations(string start,List<string> vertexWithFlow, Dictionary<string, Dictionary<string, int>> distanceMap, Dictionary<string, Vertex> map, int minutes)
 		{
-			var usingLinq = vertexWithFlow.Select(x => (0, x))
+            return vertexWithFlow.Select(x => (0, x))
 				.ToList()
 				.GetPermutations(GetNumberOfMinSubcount(vertexWithFlow.Count))
 				.AsParallel()
@@ -114,12 +151,15 @@ namespace AdventOfCode2022
 						{
 							currentValue += map[nextVertex.Item2].FlowRate * simulationMinutes;
 						}
+                        else 
+                        {
+                            // simulationMinutes = 
+                        }
 					}
-				return (currentValue, p.First());
+				return (currentValue, p.First().x);
 				
-			});
-
-			return usingLinq.Item2.x;
+			}).x
+            ;
 		}
         int GetNumberOfMinSubcount(int count)
         {
