@@ -1,306 +1,224 @@
-using System.IO;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace AdventOfCode2022
 {
-    public class Puzzle16 : IPuzzle
-    {
-        private IList<string> allLines;
-        public Puzzle16()
-        {
-            this.allLines = File.ReadAllLines(path);
-        }
-        // public static string path => "input/EXAMPLE.TXT";
-        public static string path => "input/Puzzle16.txt";
+	public class Puzzle16 : IPuzzle
+	{
+		private string real => @"input/Puzzle16.txt";
+		private string example => @"input/EXAMPLE.TXT";
+		public string source => Example ? this.example : this.real;
+
+		public bool Example => false;
+		public bool UseParallell = true;
+        public bool DebugOutput => true;
+		public static int s_Subcount => 7;
+
         public int FirstResult => 0;
         public long SecondResult => 0;
-        private Dictionary<string, Dictionary<string,int>> distanceMap;
 
-        public int Solve()
-        {
-            var map = this.GetMap();
-            var vertexWithFlow = map.Values
-                .Where(x => x.FlowRate > 0)
-                .ToList();
-            this.distanceMap = new Dictionary<string, Dictionary<string, int>>();
-            foreach(var start in map.Values)
-            {
-                distanceMap.Add(start.Name, new Dictionary<string, int>());
-                foreach(var end in map.Values)
-                {
-                    var distance = this.GetDistanceToNode(map, start,end);
-                    distanceMap[start.Name][end.Name] = distance;
-                }
-            }
+		public int Solve()
+		{
+			var allVertex = this.CreateMap();
+			var vertexWithFlow = allVertex
+				.Where(x => x.FlowRate > 0)
+                .Select(x => x.Name)
+				.ToList();
+			var map = allVertex.ToDictionary(x => x.Name);
+			var distanceMap = new Dictionary<string, Dictionary<string, int>>();
+			foreach (var i in allVertex)
+			{
+				distanceMap.Add(i.Name, new Dictionary<string, int>());
+				foreach (var j in allVertex)
+				{
+					distanceMap[i.Name][j.Name] = this.GetDistance(map[i.Name], map[j.Name], map);
+				}
+			}
 
+			//example 1651
+			var clock = new Stopwatch();
             
-            // });
+			clock.Start();
+			var baa = this.Solve(vertexWithFlow, distanceMap, map);
+			clock.Stop();
+			Console.WriteLine("Answer "+baa+ " took: " +clock.Elapsed+ " with parallell = " + UseParallell + " subcount: "+ s_Subcount);
+			
+            clock.Reset();
             
-            //1651 for exampl
-            //1709 too low
-            //2115 too high
-            return this.Search(map.First().Value, vertexWithFlow, (30,0));
-            // return this.TrySolveWithPermutations(vertexWithFlow, distanceMap, map);
-            // return this.BFS_Improved(vertexWithFlow.ToDictionary(x => x.Name)
-            //     , map.Values.First()
-            //     , distanceMap
-            //     , vertexWithFlow
-            //     );
-        }
+			clock.Start();
+			this.UseParallell = !this.UseParallell;
+			var abb = this.Solve(vertexWithFlow, distanceMap, map);
+			clock.Stop();
+			Console.WriteLine("Answer "+abb+ " took: " +clock.Elapsed+ " with parallell = " + UseParallell + " subcount: "+ s_Subcount);
 
-            (int Time, int Score) Move(Vertex from, Vertex to, (int Time, int Score) previous)
-            {
-                var dist = this.distanceMap[from.Name][to.Name];
-
-                var tEnd = previous.Time - dist - 1;
-                return (tEnd, previous.Score + (tEnd * to.FlowRate ));
-            }
-            int Search(Vertex from, List<Vertex> too, (int Time, int Score) previous)
-            {
-                var highScore = 0;
-                foreach (var to in too)
-                {
-                    var move = Move(from, to, previous);
-                    if (move.Time > 0)
-                    {
-                        if (move.Score > highScore)
-                        {
-                            highScore = move.Score;
-                        }
-                        if (too.Count > 1)
-                        {
-                            //check time here?
-                            var a = Search(to, too.Where(j => j != to).ToList(), move);
-                            highScore = a > highScore ? a : highScore;
-                        }
-                    }
-                }
-
-
-                return highScore;
-            }
-        int SolveRecirsive(Vertex start, List<Vertex> too, Dictionary<string, Dictionary<string,int>> distanceMap)
-        {
-            
-
-            return 0;
-        }
-
-int TrySolveWithPermutations(List<Vertex> vertexWithFlow, Dictionary<string, Dictionary<string,int>> distanceMap, Dictionary<string, Vertex> map)
-{
-int maxValue = 0;
-            var bestPermutation = new List<string>();
-            var vertexWithFlowNames = vertexWithFlow.OrderByDescending(x => x.FlowRate).Select(x => x.Name).Take(10).ToList();
-            var permutations = vertexWithFlowNames.GetPermutations(vertexWithFlowNames.Count());
-            long count = 0;
-            long outputFreq = 100000L;
-            // Parallel.ForEach(permutations, new ParallelOptions { MaxDegreeOfParallelism = 100 }, permutation =>  
-            // {
-                var lastIndex = map.First().Key;
-                var currentValue = 0;
-                var minutes = 30;
-            foreach(var permutation in permutations)
-            {
-                count++;
-                currentValue = 0;
-                minutes = 30;
-                if(count % outputFreq == 0)
-                {
-                    Console.WriteLine(count);
-                }
-
-                foreach(var nextVertex in permutation)
-                {
-                    var distance = distanceMap[lastIndex][nextVertex];
-                    lastIndex = nextVertex;
-                    minutes -= distance;
-                    minutes--;
-                    if(minutes>0)
-                    {
-                        currentValue += map[nextVertex].FlowRate * minutes;
-                    }
-                }
-                if(currentValue > maxValue)
-                {
-                    maxValue = currentValue;
-                    bestPermutation = permutation.ToList();
-                }
-            }
-            return maxValue;
-}
-
-        
-/*
-//expected result
-DD 20   1 step 
-BB 13   2 steps
-JJ 21   3 steps
-HH 22   7 steps
-EE 3    4 steps
-CC 2    3 steps
-
-//actual
-DD 20
-JJ 21
-HH 22
-BB 13
-EE 3
-CC 2
-
-AA => DD
-DD => cc => BB
-BB =>  AA => II  => JJ
-jj => II => AA => DD => EE => FF => GG => HH 
-HH => GG => FF => EE
-EE => DD => CC
-*/
-        int BFS_Improved(Dictionary<string,Vertex> map
-            , Vertex root
-            , Dictionary<string, Dictionary<string, int>> distanceMap
-            , List<Vertex> allWithFlow
-            )
-        {
-            var q = new List<Vertex>();
-            root.Discovered = true;
-            q.Add(root);
-            var i = 0;
-            var result = 0;
-            Vertex last = root;
-            while(q.Any() && i < 30)
-            {
-                var a = this.GetSingleBest(last, q, distanceMap);
-                var v = a.Item1;
-                q = a.q;
-                i += a.distance;
-                if(v.FlowRate > 0)
-                {
-                    i++;
-                    v.IsOn = true;
-                    //Console.WriteLine(v.Name + " " + v.FlowRate);
-                }
-                // if(v == goal) return 0;
-
-                foreach(var n in allWithFlow)
-                {
-                    var w = n;
-                    if(!w.Discovered)
-                    {
-                        w.Discovered = true;
-                        w.Parent = v;
-                        q.Add(w);
-                    }
-                }
-            }
-            return result;
-        }
-        List<(Vertex,int score)> GetBest(Vertex last, List<Vertex> q, Dictionary<string, Dictionary<string, int>> distanceMap)
-        {
-            var score = new List<(Vertex, int)>();
-            foreach(Vertex i in q)
-            {
-                var distance = distanceMap[last.Name][i.Name];
-                score.Add(new (i, i.FlowRate - distance));
-            }
-            return score;
-        }
-        (Vertex v, int distance, int score, List<Vertex> q) GetSingleBest(Vertex last, List<Vertex> q, Dictionary<string, Dictionary<string, int>> distanceMap)
-        {
-            var bestList = this.GetBest(last, q, distanceMap).GroupBy(c => c.score);
-            var group = bestList.OrderByDescending(x => x.Key).First();
-
-
-            if(group.Count() == 1)
-            {
-                var l = q;
-                l.Remove(group.First().Item1);
-                return (group.First().Item1, distanceMap[last.Name][group.First().Item1.Name], group.First().score, l);
-            }
-
-            var a = new List<(Vertex, int distance, int score, List<Vertex>)>();
-            foreach(var potentian in group)
-            {
-                var nextList = q.ToList();
-                nextList.Remove(potentian.Item1);
-                var b = this.GetSingleBest(potentian.Item1, nextList, distanceMap);
-                a.Add(b);
-            }
-
-            return a.OrderByDescending(x => x.score).First();
-        }
-
-
+			return 0;
+		}
         public long SolveNext()
-        { 
+        {
             return 0;
         }
+		int Solve(List<string> vertexWithFlow, Dictionary<string, Dictionary<string, int>> distanceMap, Dictionary<string, Vertex> map) 
+		{
+			string next = "";
+			string current = map.Keys.First();
+			int result = 0;
+			var time = 30;
+            var vertex = vertexWithFlow.ToList();
+			while (time>0)
+			{
+				if(vertex.Count() == 0)
+				{
+					break;
+				}
+				next = this.UseParallell 
+					? this.GetNextWithParallellPermutations(current, vertex, distanceMap, map, time) 
+					: this.GetNextWithPermutations(current, vertex, distanceMap, map, time);
+				if(DebugOutput)Console.WriteLine(next + " at time:" + (30-time+2) + " with flow of: "+ map[next].FlowRate);
+				if(distanceMap[current][next] > 0) 
+				{
+					time -= distanceMap[current][next];
+					time--;
+					result += (time) * map[next].FlowRate;
+				}
+				
+				current = next;
+				vertex.Remove(next);
+			}
+			return result;
+		}
+	
+		string GetNextWithParallellPermutations(string start,List<string> vertexWithFlow, Dictionary<string, Dictionary<string, int>> distanceMap, Dictionary<string, Vertex> map, int minutes)
+		{
+			var usingLinq = vertexWithFlow.Select(x => (0, x))
+				.ToList()
+				.GetPermutations(GetNumberOfMinSubcount(vertexWithFlow.Count))
+				.AsParallel()
+                .WithDegreeOfParallelism(512)
+				.Max(p =>
+				{
+					var simulationMinutes = minutes;
+					var lastIndex = start;
+					var currentValue = 0;
+					foreach (var nextVertex in p)
+					{
+						var distance = distanceMap[lastIndex][nextVertex.Item2];
+						lastIndex = nextVertex.Item2;
+						simulationMinutes -= distance;
+						simulationMinutes--;
+						if(simulationMinutes > 0)
+						{
+							currentValue += map[nextVertex.Item2].FlowRate * simulationMinutes;
+						}
+					}
+				return (currentValue, p.First());
+				
+			});
 
-        int GetDistanceToNode(Dictionary<string,Vertex> map, Vertex start, Vertex end)
+			return usingLinq.Item2.x;
+		}
+        int GetNumberOfMinSubcount(int count)
         {
-            var visited = new HashSet<Vertex>();
-            var next = new HashSet<Vertex>();
-            next.Add(start);
-            var stepps = 0;
-            visited.Add(start);
-            while(next.Count > 0)
-            {
-                var nextBatch = new HashSet<Vertex>();
-                foreach (var current in next)
-                {
-                    if(current == end)
-                    {
-                        return stepps;
-                    }
-                    
-                    visited.Add(current);
-                    foreach (var item in current.Neighbours)
-                    {
-                        nextBatch.Add(map[item]);
-                    }
-
-                }
-                next = nextBatch;
-                stepps++;
-            }
-            return stepps;
+            return Math.Min(count, s_Subcount);
         }
-        
-        Dictionary<string,Vertex> GetMap()
-        {
-            var result = new Dictionary<string,Vertex>();
-            foreach(var line in this.allLines)
-            {
-                var a = line.Split('=',';',',');
-                var neighbours = a.Skip(3)
-                    .Select(x => new String( x.TakeLast(2).ToArray()))
-                    .ToList();
-                neighbours.Insert(0, new string(a[2].TakeLast(2).ToArray()));
+		string GetNextWithPermutations(string start, List<string> vertexWithFlow, Dictionary<string, Dictionary<string, int>> distanceMap, Dictionary<string, Vertex> map, int minutes)
+		{
+			var vertexWithFlowNames = vertexWithFlow
+                .Select(x => x)
+                .ToList();
 
-                var vertex = new Vertex()
-                {
-                    Name = $"{line[6]}{line[7]}",
-                    FlowRate = int.Parse(a[1]),
-                    Neighbours = neighbours,
+			var permutations = vertexWithFlowNames.GetPermutations(GetNumberOfMinSubcount(vertexWithFlow.Count));
+			var maxValue = 0;
+			var bestStart = "";
+			foreach (var permutation in permutations)
+			{
+				var simulationMinutes = minutes;
+				var currentValue = 0;
+				var lastIndex = start;
+				foreach (var nextVertex in permutation)
+				{
+					var distance = distanceMap[lastIndex][nextVertex];
+					lastIndex = nextVertex;
+					simulationMinutes -= distance;
+					simulationMinutes--;
+					if(simulationMinutes > 0)
+					{
+						currentValue += map[nextVertex].FlowRate * simulationMinutes;
+					}
+				}
+				if (currentValue >= maxValue)
+				{
+					maxValue = currentValue;
+					bestStart = permutation.First();
+				}
+			}
 
-                };
-                result.Add(vertex.Name, vertex);
-            }
-            return result;
-        }
+			return bestStart;
+		}
+		int GetDistance(Vertex start, Vertex end, Dictionary<string, Vertex> map)
+		{
+			var q = new List<Vertex>();
+			var visited = new List<Vertex>();
+			q.Add(start);
+			var count = 0;
+			while (q.Any())
+			{
+				var nextBatch = new List<Vertex>();
+				foreach (var v in q)
+				{
+					if (v == end)
+					{
+						return count;
+					}
+					visited.Add(v);
+					foreach (var n in v.Neighbours)
+					{
+						var neighbour = map[n];
+						if (!visited.Contains(neighbour))
+						{
+							nextBatch.Add(neighbour);
+						}
+					}
+				}
+				q = nextBatch;
+				count++;
+			}
+			return count;
+		}
 
-    }
+		IList<Vertex> CreateMap()
+		{
+			var allLines = File.ReadAllLines(source, Encoding.UTF8);
+			var result = new List<Vertex>();
+			foreach (var line in allLines)
+			{
+				var a = line.Split('=', ';', ',').ToList();
+				var flowRate = int.Parse(a[1]);
+				var firstNeighbour = new string(a[2].TakeLast(2).ToArray());
+				var lastNeighbours = a.Skip(3).Select(x => $"{x[1]}{x[2]}").ToList();
+				var neighbours = new List<string>();
+				neighbours.Add(firstNeighbour);
+				neighbours.AddRange(lastNeighbours);
 
-    public class Vertex
-    {
-        public string Name {get; set;}
-        public List<string> Neighbours {get; set;}
-        public int FlowRate {get;set;}
-        public bool Discovered{get;set;}
-        public bool IsOn {get;set;}
-        public Vertex Parent {get;set;}
-
-
-    }
+				var vertex = new Vertex()
+				{
+					Name = $"{line[6]}{line[7]}",
+					FlowRate = flowRate,
+					Neighbours = neighbours,
+				};
+				result.Add(vertex);
+			}
+			return result;
+		}
+	}
+	public class Vertex
+	{
+		public string Name { get; set; }
+		public int FlowRate { get; set; }
+		public List<string> Neighbours { get; set; }
+	}
 }
