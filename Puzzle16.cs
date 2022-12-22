@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Diagnostics;
-using System.Threading.Tasks;
 
 namespace AdventOfCode2022
 {
@@ -14,13 +12,12 @@ namespace AdventOfCode2022
 		private string example => @"input/EXAMPLE.TXT";
 		public string source => Example ? this.example : this.real;
 
-		public bool Example => false;
-		public bool UseParallell = true;
-        public bool DebugOutput => false;
-		public static int s_Subcount => 4;
+        public bool Example => false;
+        public bool UseBFS => false;
+		public int Subcount = 4;
 
-        public int FirstResult => 0;
-        public long SecondResult => 0;
+        public int FirstResult => Example ? 1651 : 1915;
+        public long SecondResult => Example ? 1707 : 2772;
 
 		public int Solve()
 		{
@@ -39,45 +36,56 @@ namespace AdventOfCode2022
 					distanceMap[i.Name][j.Name] = this.GetDistance(map[i.Name], map[j.Name], map);
 				}
 			}
-
-			//example 1651
-			var clock = new Stopwatch();
-            
-			clock.Start();
-    			Console.WriteLine("Answer "+this.Solve(vertexWithFlow, distanceMap, map)+ " took: " +clock.Elapsed+ " with parallell = " + UseParallell + " subcount: "+ s_Subcount);
-			clock.Stop();
-            clock.Reset();
-			
-            
-            clock.Start();
-			    Console.WriteLine("Answer "+Solver_BFS(vertexWithFlow,distanceMap,map)+ " took: " +clock.Elapsed+ " with solving DFS");
-            clock.Stop();
-            clock.Reset();
-
-			clock.Start();
-			this.UseParallell = !this.UseParallell;
-			var abb = this.Solve(vertexWithFlow, distanceMap, map);
-			clock.Stop();
-			Console.WriteLine("Answer "+abb+ " took: " +clock.Elapsed+ " with parallell = " + UseParallell + " subcount: "+ s_Subcount);
-
-			return 0;
+            return this.UseBFS
+                ? this.Solver_BFS(vertexWithFlow, distanceMap, map, 30)
+                : this.Solve(vertexWithFlow, distanceMap, map);
 		}
 
-        public int Solver_BFS(List<string> vertexWithFlow, Dictionary<string, Dictionary<string, int>> distanceMap, Dictionary<string, Vertex> map)
+        public long SolveNext()
+        {
+            var allVertex = this.CreateMap();
+			var vertexWithFlow = allVertex
+				.Where(x => x.FlowRate > 0)
+                .Select(x => x.Name)
+				.ToList();
+			var map = allVertex.ToDictionary(x => x.Name);
+			var distanceMap = new Dictionary<string, Dictionary<string, int>>();
+			foreach (var i in allVertex)
+			{
+				distanceMap.Add(i.Name, new Dictionary<string, int>());
+				foreach (var j in allVertex)
+				{
+					distanceMap[i.Name][j.Name] = this.GetDistance(map[i.Name], map[j.Name], map);
+				}
+			}
+            if(this.UseBFS)
+            {
+                return this.Solver_BFS(vertexWithFlow, distanceMap, map, 26, 0, true);
+            }
+
+            var me = this.Solve(vertexWithFlow, distanceMap, map, 26);
+            this.Subcount = 6;
+            var elephant = this.Solve(vertexWithFlow, distanceMap,map, 26);
+            return me+elephant;
+        }
+        public int Solver_BFS(List<string> vertexWithFlow
+            , Dictionary<string, Dictionary<string, int>> distanceMap
+            , Dictionary<string, Vertex> map
+            , int time
+            , int score = 0
+            , bool useElephant = false
+            )
         {
             var q = new Queue<(string currentvalve, int timeRemaining, int totalRelief, List<string> openValves)>();
-
-            // q.Enqueue((map.Keys.First(), 30, 0, new List<string>()));
-            q.Enqueue(("AA", 30, 0, new List<string>()));
+            q.Enqueue(("AA", time, score, new List<string>()));
 
             int maxValue = 0;
             while(q.Any())
             {
                 var c = q.Dequeue();
-                
                 foreach(var edge in vertexWithFlow)
                 {
-                    var distance = distanceMap[c.currentvalve][edge] +1;
+                    var distance = distanceMap[c.currentvalve][edge] + 1;
                     if( distance < c.timeRemaining && !c.openValves.Contains(edge))
                     {
                         var presure = (c.timeRemaining - distance) * map[edge].FlowRate;
@@ -89,91 +97,61 @@ namespace AdventOfCode2022
                             maxValue = c.totalRelief + presure;
                         }
                     }
+                    else if (useElephant && c.totalRelief >= maxValue/2)
+                    {
+                        var a = Solver_BFS(vertexWithFlow.Except(c.openValves).ToList()
+                            , distanceMap
+                            , map
+                            , time
+                            , c.totalRelief
+                            , false
+                            );
+                        maxValue = Math.Max(a, maxValue);
+                        
+                    }
                 }
             }
+
             return maxValue;
         }
-        public long SolveNext()
-        {
-            return 0;
-        }
-		int Solve(List<string> vertexWithFlow, Dictionary<string, Dictionary<string, int>> distanceMap, Dictionary<string, Vertex> map) 
+
+		int Solve(List<string> vertex
+            , Dictionary<string, Dictionary<string, int>> distanceMap
+            , Dictionary<string, Vertex> map
+            , int startTime = 30
+            )
 		{
-			string next = "";
 			string current = "AA";
 			int result = 0;
-			var time = 30;
-            var vertex = vertexWithFlow.ToList();
-			while (time>0)
+            var time = startTime;
+			while (time > 0)
 			{
 				if(vertex.Count() == 0)
 				{
 					break;
 				}
-				next = this.UseParallell 
-					? this.GetNextWithParallellPermutations(current, vertex, distanceMap, map, time) 
-					: this.GetNextWithPermutations(current, vertex, distanceMap, map, time);
-				
-                var distance = distanceMap[current][next];
+				var next = this.GetNextWithPermutations(current, vertex, distanceMap, map, time);
+
+                var distance = distanceMap[current][next] + 1;
                 time -= distance;
-                time--;
                 if(time > 0)
 				{
-				    if(DebugOutput)Console.WriteLine(next + " at time:" + (30-time) + " with flow of: "+ map[next].FlowRate);
 					result += (time) * map[next].FlowRate;
+                    current = next;
+                    vertex.Remove(next);
 				}
-				
-				current = next;
-				vertex.Remove(next);
 			}
 			return result;
 		}
-	
-		string GetNextWithParallellPermutations(string start,List<string> vertexWithFlow, Dictionary<string, Dictionary<string, int>> distanceMap, Dictionary<string, Vertex> map, int minutes)
-		{
-            return vertexWithFlow.Select(x => (0, x))
-				.ToList()
-				.GetPermutations(GetNumberOfMinSubcount(vertexWithFlow.Count))
-				.AsParallel()
-                .WithDegreeOfParallelism(512)
-				.Max(p =>
-				{
-					var simulationMinutes = minutes;
-					var lastIndex = start;
-					var currentValue = 0;
-					foreach (var nextVertex in p)
-					{
-						var distance = distanceMap[lastIndex][nextVertex.Item2];
-						lastIndex = nextVertex.Item2;
-						simulationMinutes -= distance;
-						simulationMinutes--;
-						if(simulationMinutes > 0)
-						{
-							currentValue += map[nextVertex.Item2].FlowRate * simulationMinutes;
-						}
-                        else 
-                        {
-                            // simulationMinutes = 
-                        }
-					}
-				return (currentValue, p.First().x);
-				
-			}).x
-            ;
-		}
         int GetNumberOfMinSubcount(int count)
         {
-            return Math.Min(count, s_Subcount);
+            return Math.Min(count, Subcount);
         }
-		string GetNextWithPermutations(string start, List<string> vertexWithFlow, Dictionary<string, Dictionary<string, int>> distanceMap, Dictionary<string, Vertex> map, int minutes)
+		string GetNextWithPermutations(string start, List<string> vertexWithFlow, Dictionary<string, Dictionary<string, int>> distanceMap, Dictionary<string, Vertex> map, int minutes, bool elephant = false)
 		{
-			var vertexWithFlowNames = vertexWithFlow
-                .Select(x => x)
-                .ToList();
-
-			var permutations = vertexWithFlowNames.GetPermutations(GetNumberOfMinSubcount(vertexWithFlow.Count));
+			var permutations = vertexWithFlow.GetPermutations(GetNumberOfMinSubcount(vertexWithFlow.Count));
 			var maxValue = 0;
-			var bestStart = "";
+			var bestPermutation = "";
 			foreach (var permutation in permutations)
 			{
 				var simulationMinutes = minutes;
@@ -193,11 +171,11 @@ namespace AdventOfCode2022
 				if (currentValue >= maxValue)
 				{
 					maxValue = currentValue;
-					bestStart = permutation.First();
+					bestPermutation = permutation.First();
 				}
 			}
 
-			return bestStart;
+			return bestPermutation;
 		}
 		int GetDistance(Vertex start, Vertex end, Dictionary<string, Vertex> map)
 		{
