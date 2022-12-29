@@ -40,12 +40,12 @@ namespace AdventOfCode2022
 					.SetRockStartPosition(yMax);
 				while (rock.CanMove(filledPositions))
 				{
-					if (moves == input.Length * (numberOfDistinctRocks))
+					if (moves == input.Length * numberOfDistinctRocks)
 					{
 						startRepeatingI = (int)i;
 						startRepeatingY = (int)yMax;
 					}
-					else if (moves == input.Length * (numberOfDistinctRocks * 2))
+					else if (moves == input.Length * numberOfDistinctRocks * 2)
 					{
 						var diffI = i - startRepeatingI;
 						var diffY = yMax - startRepeatingY;
