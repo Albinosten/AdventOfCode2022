@@ -33,9 +33,7 @@ namespace AdventOfCode2022
 	
 		private int GetScoreFromBlueprint(Blueprint blueprint, int time)
 		{
-			int totalRuns = 0;
 			var maxScore = 0;
-
 			var q = new Stack<(Resources resources, Machines machines, int time, Choice move)>();
 			foreach(Choice move in (Choice[])  Enum.GetValues(typeof(Choice)))
 			{
@@ -43,12 +41,8 @@ namespace AdventOfCode2022
 			}
 			while(q.Any())
 			{
-				totalRuns++;
 				var v = q.Pop();
-				if(v.time > time)
-				{
-					continue;
-				}
+				if(v.time > time) continue;
 				
 				if(this.CanBuild(blueprint, v.move, v.resources))
 				{
@@ -56,12 +50,19 @@ namespace AdventOfCode2022
 					this.AddResources(v.resources, v.machines);
 					this.DoneBuild(v.move, v.machines);
 
-					foreach(Choice move in Enum.GetValues(typeof(Choice))
-						.Cast<Choice>()
-						.Where(x => Include(x, blueprint, v.machines))
-						)
+					if(this.CanBuild(blueprint, Choice.GeodeRobot, v.resources))
 					{
-						q.Push((v.resources.Clone(), v.machines.Clone(), v.time + 1, move));
+						q.Push((v.resources.Clone(), v.machines.Clone(), v.time + 1, Choice.GeodeRobot));
+					}
+					else
+					{
+						foreach(Choice move in Enum.GetValues(typeof(Choice))
+							.Cast<Choice>()
+							.Where(x => Include(x, blueprint, v.machines))
+							)
+						{
+							q.Push((v.resources.Clone(), v.machines.Clone(), v.time + 1, move));
+						}
 					}
 				}
 				else
@@ -91,38 +92,15 @@ namespace AdventOfCode2022
 			Choice.GeodeRobot => true,
 			_ => false,
 		};
-		private bool CanBuild(Blueprint blueprint, Choice nextMove, Resources recources)
+
+		private bool CanBuild(Blueprint blueprint, Choice nextMove, Resources recources) => nextMove switch
 		{
-			switch (nextMove)
-			{
-				case Choice.OreRobot:
-					if( blueprint.OreRobotCost <= recources.Ores) 
-					{
-						return true;
-					}
-					return false;
-				case Choice.ClayRobot:
-					if(blueprint.ClayRobotCost <= recources.Ores) 
-					{
-						return true;
-					}
-					return false;
-				case Choice.ObsidianRobot:
-					if(blueprint.ObsidianRobotCost.clay <= recources.Clay && blueprint.ObsidianRobotCost.ore <= recources.Ores)
-					{
-						return true;
-					}
-					return false;
-				case Choice.GeodeRobot:
-					if(blueprint.GeodeRobotCost.ore <= recources.Ores && blueprint.GeodeRobotCost.obsidian <= recources.Obsidian) 
-					{
-						return true;
-					}
-					return false;
-				default:
-					return false;
-			}
-		}
+			Choice.OreRobot => blueprint.OreRobotCost <= recources.Ores,
+			Choice.ClayRobot => blueprint.ClayRobotCost <= recources.Ores,
+			Choice.ObsidianRobot => blueprint.ObsidianRobotCost.clay <= recources.Clay && blueprint.ObsidianRobotCost.ore <= recources.Ores,
+			Choice.GeodeRobot => blueprint.GeodeRobotCost.ore <= recources.Ores && blueprint.GeodeRobotCost.obsidian <= recources.Obsidian,
+			_ => false,
+		};
 		private void StartBuild(Blueprint blueprint, Choice nextMove, Resources recources)
 		{
 			switch (nextMove)
