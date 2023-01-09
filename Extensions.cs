@@ -58,6 +58,10 @@ namespace AdventOfCode2022
             }  
             return result;
         }
+        public static int Multiply(this IEnumerable<int> input)
+        {
+            return (int)input.Select(x => (long)x).Multiply();
+        }
 
         public static IEnumerable<IEnumerable<T>> GetPermutations<T>(this IEnumerable<T> list, int length)
         {

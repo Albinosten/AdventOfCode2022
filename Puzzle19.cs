@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
+
 namespace AdventOfCode2022
 {
 	public class Puzzle19 : IPuzzle
@@ -13,72 +12,85 @@ namespace AdventOfCode2022
         {
             this.allLines = File.ReadAllLines(source);
         }
-		public static string source => "input/EXAMPLE.txt";
-		// public static string source => "input/Puzzle19.txt";
-        public int FirstResult => 0;
-        public long SecondResult => 0;
+		public static string source => "input/Puzzle19.txt";
+        public int FirstResult => 1653;
+        public long SecondResult => 4212; //took 8:41...
 
 		public int Solve() 
 		{
-			var blueprints = new List<Blueprint>();
-			foreach(var line in allLines)
-			{
-				//1,6,12,18,21,27,30
-				var a = line.Split(' ');
-				var blueprint = new Blueprint()
-				{
-					Number = int.Parse(a[1].Split(':').First()),
-					OreRobotCost = int.Parse(a[6]),
-					ClayRobotCost = int.Parse(a[12]),
-					ObsidianRobotCost = (int.Parse(a[18]),int.Parse(a[21])),
-					GeodeRobotCost = (int.Parse(a[27]),int.Parse(a[30])),
-				};
-				blueprints.Add(blueprint);
-			}
-
-			return this.getScoreFromBlueprint(blueprints[1]);
-			// return blueprints.AsParallel().Sum(x => this.getScoreFromBlueprint(x) * x.Number);
+			return this.GetBluePrints()
+				.AsParallel()
+				.Sum(x => this.GetScoreFromBlueprint(x, 24) * x.Number);
 		}
-
-		private int getScoreFromBlueprint(Blueprint blueprint)
+    	public long SolveNext()
+        {
+			return this.GetBluePrints()
+				.Take(3)
+				.AsParallel()
+				.Select(x => this.GetScoreFromBlueprint(x, 32))
+				.Multiply();
+        }
+	
+		private int GetScoreFromBlueprint(Blueprint blueprint, int time)
 		{
-			var map = new RoadMap();
-			int maxScore = 0;
-			var resources = new Resources();
-			var machines = new Machines();
-			while(map.HasNextMove)
+			int totalRuns = 0;
+			var maxScore = 0;
+
+			var q = new Stack<(Resources resources, Machines machines, int time, Choice move)>();
+			foreach(Choice move in (Choice[])  Enum.GetValues(typeof(Choice)))
 			{
-				var nextMove = map.GetNextMove();
-				for(int i = 0; i < 24; i++)
+				q.Push((new Resources(), new Machines(), 1, move));
+			}
+			while(q.Any())
+			{
+				totalRuns++;
+				var v = q.Pop();
+				if(v.time > time)
 				{
-					resources.Ores += machines.OreRobots;
-					resources.Clay += machines.ClayRobot;
-					resources.Obsidian += machines.ObsidianRobot;
-					resources.Geodes += machines.GeodeRobot;
-					if(this.CanBuild(blueprint, nextMove, resources) && i < 23)
+					continue;
+				}
+				
+				if(this.CanBuild(blueprint, v.move, v.resources))
+				{
+					this.StartBuild(blueprint, v.move, v.resources);
+					this.AddResources(v.resources, v.machines);
+					this.DoneBuild(v.move, v.machines);
+
+					foreach(Choice move in Enum.GetValues(typeof(Choice))
+						.Cast<Choice>()
+						.Where(x => Include(x, blueprint, v.machines))
+						)
 					{
-						this.Build(blueprint, nextMove, resources, machines);
-						nextMove = map.GetNextMove();
-					}
-					if(resources.Geodes > maxScore)
-					{
-						maxScore = resources.Geodes;
+						q.Push((v.resources.Clone(), v.machines.Clone(), v.time + 1, move));
 					}
 				}
-				resources = new Resources();
-				machines = new Machines();
-				map.Done();
+				else
+				{
+					this.AddResources(v.resources, v.machines);
+					q.Push((v.resources, v.machines, v.time + 1, v.move));
+				}
+				if(v.resources.Geodes > maxScore)
+				{
+					maxScore = v.resources.Geodes;
+				}
 			}
-
 			return maxScore;
 		}
-		/*
-	Blueprint 1:
-  Each ore robot costs 4 ore.
-  Each clay robot costs 2 ore.
-  Each obsidian robot costs 3 ore and 14 clay.
-  Each geode robot costs 2 ore and 7 obsidian.
-*/
+		private void AddResources(Resources r, Machines m)
+		{
+			r.Ores += m.OreRobots;
+			r.Clay += m.ClayRobot;
+			r.Obsidian += m.ObsidianRobot;
+			r.Geodes += m.GeodeRobot;
+		}
+		private bool Include(Choice move, Blueprint b, Machines machines) => move switch
+		{
+			Choice.OreRobot => new int[] { b.OreRobotCost, b.ClayRobotCost, b.ObsidianRobotCost.ore, b.GeodeRobotCost.ore }.Max() >= machines.OreRobots,
+			Choice.ClayRobot => b.ObsidianRobotCost.clay >= machines.ClayRobot,
+			Choice.ObsidianRobot => b.GeodeRobotCost.obsidian >= machines.ObsidianRobot,
+			Choice.GeodeRobot => true,
+			_ => false,
+		};
 		private bool CanBuild(Blueprint blueprint, Choice nextMove, Resources recources)
 		{
 			switch (nextMove)
@@ -111,45 +123,66 @@ namespace AdventOfCode2022
 					return false;
 			}
 		}
-					/*
-	Blueprint 1:
-  Each ore robot costs 4 ore.
-  Each clay robot costs 2 ore.
-  Each obsidian robot costs 3 ore and 14 clay.
-  Each geode robot costs 2 ore and 7 obsidian.
-*/
-		private void Build(Blueprint blueprint, Choice nextMove, Resources recources, Machines machines)
+		private void StartBuild(Blueprint blueprint, Choice nextMove, Resources recources)
 		{
 			switch (nextMove)
 			{
 				case Choice.OreRobot:
-					recources.Ores =- blueprint.OreRobotCost;
+					recources.Ores -= blueprint.OreRobotCost;
+					break;
+				case Choice.ClayRobot:
+					recources.Ores -= blueprint.ClayRobotCost;
+				break;
+				case Choice.ObsidianRobot:
+					recources.Ores -= blueprint.ObsidianRobotCost.ore;
+					recources.Clay -= blueprint.ObsidianRobotCost.clay;
+				break;
+				case Choice.GeodeRobot:
+					recources.Ores -= blueprint.GeodeRobotCost.ore;
+					recources.Obsidian -= blueprint.GeodeRobotCost.obsidian;
+				break;
+				default:
+					break;
+			}
+		}
+		private void DoneBuild(Choice nextMove, Machines machines)
+		{
+			switch (nextMove)
+			{
+				case Choice.OreRobot:
 					machines.OreRobots++;
 					break;
 				case Choice.ClayRobot:
-					recources.Ores =- blueprint.ClayRobotCost;
 					machines.ClayRobot++;
 				break;
 				case Choice.ObsidianRobot:
-					recources.Ores =- blueprint.ObsidianRobotCost.ore;
-					recources.Clay =- blueprint.ObsidianRobotCost.clay;
 					machines.ObsidianRobot++;
 				break;
 				case Choice.GeodeRobot:
-					recources.Ores =- blueprint.GeodeRobotCost.ore;
-					recources.Obsidian =- blueprint.GeodeRobotCost.obsidian;
 					machines.GeodeRobot++;
 				break;
 				default:
 					break;
 			}
 		}
-        public long SolveNext()
-        {
-            return 0;
-        }
+    
+		public IEnumerable<Blueprint> GetBluePrints()
+		{
+			foreach(var line in this.allLines)
+			{
+				var a = line.Split(' ');
+				
+				yield return new Blueprint()
+				{
+					Number = int.Parse(a[1].Split(':').First()),
+					OreRobotCost = int.Parse(a[6]),
+					ClayRobotCost = int.Parse(a[12]),
+					ObsidianRobotCost = (int.Parse(a[18]),int.Parse(a[21])),
+					GeodeRobotCost = (int.Parse(a[27]),int.Parse(a[30])),
+				};
+			}
+		}
 	}
-
 	public class Machines
 	{
 		public Machines()
@@ -160,6 +193,16 @@ namespace AdventOfCode2022
 		public int ClayRobot;
 		public int ObsidianRobot;
 		public int GeodeRobot;
+		public Machines Clone()
+		{
+			return new Machines()
+			{
+				OreRobots = this.OreRobots,
+				ClayRobot = this.ClayRobot,
+				ObsidianRobot = this.ObsidianRobot,
+				GeodeRobot = this.GeodeRobot,
+			};
+		}
 	}
 	public class Resources
 	{
@@ -167,58 +210,16 @@ namespace AdventOfCode2022
 		public int Clay;
 		public int Obsidian;
 		public int Geodes;
-	}
-	public class RoadMap
-	{
-		public RoadMap()
+		public Resources Clone()
 		{
-			this.Path = new List<Choice>();
-			this.index = 0;
-			this.HasNextMove = true;
-
-		}
-		public bool HasNextMove;
-		public Choice GetNextMove()
-		{
-			index++;
-
-			if(this.Path.Count < index)
+			return new Resources()
 			{
-				this.Path.Add(Choice.OreRobot);
-			}
-			return this.Path[index-1];
+				Ores = this.Ores,
+				Clay = this.Clay,
+				Obsidian = this.Obsidian,
+				Geodes = this.Geodes,
+			};
 		}
-		public int NumberOfTries;
-		public void Done()
-		{
-			this.NumberOfTries++;
-			if(this.Path.All(x => x == Choice.GeodeRobot))
-			{
-				this.HasNextMove = false;
-			}
-
-			this.Done(this.Path.Count-1);
-
-
-			this.index = 0;
-
-		}
-
-		private void Done(int i)
-		{
-			this.Path[i]++;
-			if((int)this.Path[i] == 4)
-			{
-				this.Path[i] = Choice.OreRobot;
-				if(i>0)
-				{
-					this.Done(i-1);
-				}
-			}
-		}
-		int index;
-		List<Choice> Path;
-
 	}
 	public enum Choice
 	{
