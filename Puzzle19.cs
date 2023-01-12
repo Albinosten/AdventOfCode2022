@@ -14,7 +14,7 @@ namespace AdventOfCode2022
         }
 		public static string source => "input/Puzzle19.txt";
         public int FirstResult => 1653;
-        public long SecondResult => 4212; //took 8:41...
+        public long SecondResult => 4212; //took 30sek
 
 		public int Solve() 
 		{
