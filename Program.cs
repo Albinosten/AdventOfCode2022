@@ -35,8 +35,9 @@ namespace AdventOfCode2022
             // OutputResult(new Puzzle17());
             // OutputResult(new Puzzle18());
             // OutputResult(new Puzzle19());
-            OutputResult(new Puzzle20());
-            
+            // OutputResult(new Puzzle20());
+            OutputResult(new Puzzle21());
+
             watch.Stop();
             Console.WriteLine("Total time run: "+ watch.Elapsed);
 
